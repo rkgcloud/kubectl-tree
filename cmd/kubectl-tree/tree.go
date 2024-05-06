@@ -31,13 +31,13 @@ var (
 func treeView(out io.Writer, objs objectDirectory, obj unstructured.Unstructured) {
 	tbl := uitable.New()
 	tbl.Separator = "  "
-	tbl.AddRow("NAMESPACE", "NAME", "READY", "REASON", "STATUS", "AGE")
+	tbl.AddRow("NAMESPACE", "NAME", "READY", "REASON", "STATUS", "AGE", "CREATE", "LAST-TRANSITION")
 	treeViewInner("", tbl, objs, obj)
 	fmt.Fprintln(color.Output, tbl)
 }
 
 func treeViewInner(prefix string, tbl *uitable.Table, objs objectDirectory, obj unstructured.Unstructured) {
-	ready, reason, kstatus := extractStatus(obj)
+	ready, reason, kstatus, ltime := extractStatus(obj)
 
 	var readyColor *color.Color
 	switch ready {
@@ -68,6 +68,7 @@ func treeViewInner(prefix string, tbl *uitable.Table, objs objectDirectory, obj 
 	}
 
 	c := obj.GetCreationTimestamp()
+	// ostat :=
 	age := duration.HumanDuration(time.Since(c.Time))
 	if c.IsZero() {
 		age = "<unknown>"
@@ -80,7 +81,7 @@ func treeViewInner(prefix string, tbl *uitable.Table, objs objectDirectory, obj 
 		readyColor.Sprint(ready),
 		readyColor.Sprint(reason),
 		statusColor.Sprint(kstatus),
-		age)
+		age, c, ltime)
 	chs := objs.ownedBy(obj.GetUID())
 	for i, child := range chs {
 		var p string

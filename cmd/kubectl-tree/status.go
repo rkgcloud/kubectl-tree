@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
@@ -10,45 +11,56 @@ import (
 
 type ReadyStatus string // True False Unknown or ""
 type Reason string
+type LastTransition string
 
-func extractStatus(obj unstructured.Unstructured) (ReadyStatus, Reason, status.Status) {
+func extractStatus(obj unstructured.Unstructured) (ReadyStatus, Reason, status.Status, LastTransition) {
 	jsonVal, _ := json.Marshal(obj.Object["status"])
 	klog.V(6).Infof("status for object=%s/%s: %s", obj.GetKind(), obj.GetName(), string(jsonVal))
 	result, err := status.Compute(&obj)
 	if err != nil {
-		return "", "", ""
+		return "", "", "", ""
 	}
 	statusF, ok := obj.Object["status"]
 	if !ok {
-		return "", "", ""
+		return "", "", "", ""
 	}
 	statusV, ok := statusF.(map[string]interface{})
 	if !ok {
-		return "", "", ""
+		return "", "", "", ""
 	}
 	conditionsF, ok := statusV["conditions"]
 	if !ok {
-		return "", "", ""
+		return "", "", "", ""
 	}
 	conditionsV, ok := conditionsF.([]interface{})
 	if !ok {
-		return "", "", ""
+		return "", "", "", ""
 	}
 
 	for _, cond := range conditionsV {
 		condM, ok := cond.(map[string]interface{})
 		if !ok {
-			return "", "", ""
+			return "", "", "", ""
 		}
 		condType, ok := condM["type"].(string)
 		if !ok {
-			return "", "", ""
+			return "", "", "", ""
+		}
+		condLtime, ok := condM["lastTransitionTime"].(string)
+		if !ok {
+			return "", "", "", ""
 		}
 		if condType == "Ready" {
 			condStatus, _ := condM["status"].(string)
 			condReason, _ := condM["reason"].(string)
-			return ReadyStatus(condStatus), Reason(condReason), status.Status(result.Status.String())
+			return ReadyStatus(condStatus), Reason(condReason), status.Status(result.Status.String()), LastTransition(getConditionTime(condLtime).String())
 		}
 	}
-	return "", "", ""
+	return "", "", "", ""
+}
+
+func getConditionTime(condTime string) metav1.Time {
+	var timestamp metav1.Time
+	timestamp.UnmarshalQueryParameter(condTime)
+	return timestamp
 }
