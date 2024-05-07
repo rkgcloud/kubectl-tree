@@ -9,7 +9,9 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "args": ["wld", "where-for-dinner", "-n", "where-for-dinner-small-197", "-v", "3", "--kubeconfig", "/Users/krashed/utils/tekton/scale-issue/kube.config"],
+            // "args": ["wld", "where-for-dinner-api-gateway-05012024-1", "-n", "where-for-dinner-small-197", "-v", "3", "--kubeconfig", "/Users/krashed/utils/tekton/scale-issue/kube.config"],
+            "args": ["wld", "where-for-dinner-api-gateway-05012024-1", "-n", "workspace", "-v", "3"],
+            // "args": ["wld", "where-for-dinner-availability-05012024-1", "-n", "where-for-dinner-small-197", "-v", "3", "--kubeconfig", "/Users/krashed/utils/tekton/scale-issue/kube.config"],
             "program": "${workspaceFolder}/cmd/kubectl-tree"
         }
     ]
